@@ -351,8 +351,14 @@ Individual = Individual_Grid
 
 def generate_successors(population):
     results = []
-    # STUDENT Design and implement this
-    # Hint: Call generate_children() on some individuals and fill up results.
+
+    for _ in range(len(population)):
+        parent1 = random.choice(population)
+        parent2 = random.choice(population)
+
+        children = parent1.generate_children(parent2)
+        results.extend(children)
+
     return results
 
 
