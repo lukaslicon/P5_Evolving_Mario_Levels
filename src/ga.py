@@ -68,12 +68,14 @@ class Individual_Grid(object):
         # STUDENT also consider weighting the different tile types so it's not uniformly random
         # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
 
+        mutation_rate = 0.1  #determines the probability that a mutation will occur at a specific gene or locus in an individual's genome
         left = 1
         right = width - 1
         for y in range(height):
             for x in range(left, right):
-                #mutate
-                pass
+                if random.random() < mutation_rate:
+                    # Mutate?
+                    genome[y][x] = random.choice(options)
         return genome
 
     # Create zero or more children from self and other
