@@ -74,8 +74,11 @@ class Individual_Grid(object):
         for y in range(height):
             for x in range(left, right):
                 if random.random() < mutation_rate:
-                    # Mutate?
-                    genome[y][x] = random.choice(options)
+                    new_tile = random.choice(options)
+                    # Prevent floating pipes
+                    if new_tile in ["|", "T"] and (y == height - 1 or genome[y+1][x] not in ["X", "|", "T"]):
+                        new_tile = "-"
+                    genome[y][x] = new_tile
         return genome
 
     # Create zero or more children from self and other
@@ -88,13 +91,25 @@ class Individual_Grid(object):
         crossover_point = random.randint(left, right)
         for y in range(height):
             for x in range(left, right):
-                if x < crossover_point:
-                    # gene from self
-                    new_genome[y][x] = self.genome[y][x]
+                # Implementing and testing uniform crossover
+                if random.random() < 0.5:
+                    gene_from_self = self.genome[y][x]
                 else:
-                    # gene from other
-                    new_genome[y][x] = other.genome[y][x]
-        new_genome = self.mutate(new_genome)
+                    gene_from_self = other.genome[y][x]
+
+                # Prevent floating pipes
+                if selected_gene in ['|', 'T'] and (y == height - 1 or new_genome[y+1][x] not in ['X', '|', 'T']):
+                    selected_gene = '-' 
+
+                new_genome[y][x] = selected_gene
+        # single point crossover
+        #         if x < crossover_point:
+        #             # gene from self
+        #             new_genome[y][x] = self.genome[y][x]
+        #         else:
+        #             # gene from other
+        #             new_genome[y][x] = other.genome[y][x]
+        # new_genome = self.mutate(new_genome)
         return (Individual_Grid(new_genome),)
 
     # Turn the genome into a level string (easy for this genome)
