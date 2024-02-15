@@ -68,7 +68,7 @@ class Individual_Grid(object):
         # STUDENT also consider weighting the different tile types so it's not uniformly random
         # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
 
-        mutation_rate = 0.1  #determines the probability that a mutation will occur at a specific gene or locus in an individual's genome
+        mutation_rate = 0.2  #determines the probability that a mutation will occur at a specific gene or locus in an individual's genome
         left = 1
         right = width - 1
         for y in range(height):
@@ -201,7 +201,7 @@ class Individual_DE(object):
                 if choice < 0.33:
                     x = offset_by_upto(x, width / 8, min=1, max=width - 2)
                 elif choice < 0.66:
-                    y = offset_by_upto(y, height / 2, min=0, max=height - 1)
+                    y = offset_by_upto(y, height / 2, min=0, max=min(5, height - 1))  # Limit height to 5 for upper half
                 else:
                     breakable = not de[3]
                 new_de = (x, de_type, y, breakable)
@@ -211,7 +211,7 @@ class Individual_DE(object):
                 if choice < 0.33:
                     x = offset_by_upto(x, width / 8, min=1, max=width - 2)
                 elif choice < 0.66:
-                    y = offset_by_upto(y, height / 2, min=0, max=height - 1)
+                    y = offset_by_upto(y, height / 2, min=0, max=min(5, height - 1))  # Limit height to 5 for upper half
                 else:
                     has_powerup = not de[3]
                 new_de = (x, de_type, y, has_powerup)
@@ -227,7 +227,7 @@ class Individual_DE(object):
                 if choice < 0.5:
                     x = offset_by_upto(x, width / 8, min=1, max=width - 2)
                 else:
-                    h = offset_by_upto(h, 2, min=2, max=height - 4)
+                    h = offset_by_upto(h, 2, min=2, max=5)
                 new_de = (x, de_type, h)
             elif de_type == "0_hole":
                 w = de[2]
@@ -248,19 +248,21 @@ class Individual_DE(object):
                 new_de = (x, de_type, h, dx)
             elif de_type == "1_platform":
                 w = de[2]
-                y = de[3]
-                madeof = de[4]  # from "?", "X", "B"
+                h = de[3]
+                y = de[4]
                 if choice < 0.25:
                     x = offset_by_upto(x, width / 8, min=1, max=width - 2)
                 elif choice < 0.5:
                     w = offset_by_upto(w, 8, min=1, max=width - 2)
                 elif choice < 0.75:
-                    y = offset_by_upto(y, height, min=0, max=height - 1)
+                    y = offset_by_upto(y, height / 2, min=0, max=min(5, height - h))  # Limit height to 5 for upper half
                 else:
                     madeof = random.choice(["?", "X", "B"])
-                new_de = (x, de_type, w, y, madeof)
+                    new_de = (x, de_type, w, h, y, madeof)
             elif de_type == "2_enemy":
-                pass
+                #enemies do not spawn in the first 5 blocks
+                x = offset_by_upto(x, width / 8, min=6, max=width - 3)
+                new_de = (x, de_type)
             new_genome.pop(to_change)
             heapq.heappush(new_genome, new_de)
         return new_genome
@@ -343,13 +345,13 @@ class Individual_DE(object):
         elt_count = random.randint(8, 128)
         g = [random.choice([
             (random.randint(1, width - 2), "0_hole", random.randint(1, 3)),
-            (random.randint(1, width - 2), "1_platform", random.randint(1, 8), random.randint(0, 10), random.choice(["?", "X", "B"])),
-            (random.randint(1, width - 2), "2_enemy"),
+            (random.randint(1, width - 2), "1_platform", random.randint(1, 8), random.randint(0, 8), random.choice(["?", "X", "B"])),
+            (random.randint(5, width - 3), "2_enemy"),
             (random.randint(1, width - 2), "3_coin", random.randint(0, 10)),
-            (random.randint(1, width - 2), "4_block", random.randint(0, 10), random.choice([True, False])),
-            (random.randint(1, width - 2), "5_qblock", random.randint(0, 10), random.choice([True, False])),
+            (random.randint(1, width - 2), "4_block", random.randint(0, 8), random.choice([True, False])),
+            (random.randint(1, width - 2), "5_qblock", random.randint(0, 8), random.choice([True, False])),
             (random.randint(1, width - 2), "6_stairs", random.randint(1, 6), random.choice([-1, 1])),
-            (random.randint(1, width - 2), "7_pipe", random.randint(2, 6))
+            (random.randint(1, width - 2), "7_pipe", random.randint(2, 5))
         ]) for i in range(elt_count)]
         return Individual_DE(g)
 
@@ -371,7 +373,7 @@ def generate_successors(population):
 
 def ga():
     # STUDENT Feel free to play with this parameter
-    pop_limit = 960
+    pop_limit = 480
     # Code to parallelize some computations
     batches = os.cpu_count()
     if pop_limit % batches != 0:
