@@ -248,17 +248,17 @@ class Individual_DE(object):
                 new_de = (x, de_type, h, dx)
             elif de_type == "1_platform":
                 w = de[2]
-                h = de[3]
-                y = de[4]
+                y = de[3]
+                madeof = de[4]  # from "?", "X", "B"
                 if choice < 0.25:
                     x = offset_by_upto(x, width / 8, min=1, max=width - 2)
                 elif choice < 0.5:
                     w = offset_by_upto(w, 8, min=1, max=width - 2)
                 elif choice < 0.75:
-                    y = offset_by_upto(y, height / 2, min=0, max=min(5, height - h))  # Limit height to 5 for upper half
+                    y = offset_by_upto(y, height, min=0, max=height - 1)
                 else:
                     madeof = random.choice(["?", "X", "B"])
-                    new_de = (x, de_type, w, h, y, madeof)
+                new_de = (x, de_type, w, y, madeof)
             elif de_type == "2_enemy":
                 #enemies do not spawn in the first 5 blocks
                 x = offset_by_upto(x, width / 8, min=6, max=width - 3)
