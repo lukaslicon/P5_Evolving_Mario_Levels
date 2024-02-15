@@ -68,62 +68,34 @@ class Individual_Grid(object):
         # STUDENT also consider weighting the different tile types so it's not uniformly random
         # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
 
-        new_genome = copy.deepcopy(self.genome)
+        mutation_rate = 0.3  #determines the probability that a mutation will occur at a specific gene or locus in an individual's genome
         left = 1
         right = width - 1
         for y in range(height):
             for x in range(left, right):
-                if random.randint(1, 100) < 33 and y > 1:
-                    # Wall
-                    if new_genome[y][x] == 'X':
-                        # Change if floating wall and not in the top half
-                        if new_genome[y - 1][x] != 'X' and y >= height // 2:
-                            if random.randint(1, 10) <= 4:
-                                genome[y][x] = 'B'
-                            else:
-                                genome[y][x] = '-'
-
-                    # Pipe or top
-                    elif new_genome[y][x] == '|' or new_genome[y][x] == 'T':
-                        # Replace if floating and not in the top half
-                        if new_genome[y - 1][x] != '|' and y != height and (
-                                new_genome[y + 1][x] != '|' or new_genome[y + 1][x] != 'T') and y >= height // 2:
-                            if random.randint(1, 10) <= 2:
-                                genome[y][x] = 'M'
-                            else:
-                                genome[y][x] = '?'
-
-                    elif new_genome[y][x] == '-':
-                        if random.randint(1, 10) <= 3:
-                            genome[y][x] = '?'
-                        if random.randint(1, 10) >= 6:
-                            genome[y][x] = 'o'
-
-                    else:
-                        genome[y][x] = new_genome[y][x]
-                else:
-                    genome[y][x] = new_genome[y][x]
+                if random.random() < mutation_rate:
+                    # Mutate?
+                    genome[y][x] = random.choice(options)
         return genome
 
     # Create zero or more children from self and other
     def generate_children(self, other):
         new_genome = copy.deepcopy(self.genome)
-        other_genome = copy.deepcopy(other.genome)
-
         # Leaving first and last columns alone...
         # do crossover with other
         left = 1
         right = width - 1
+        crossover_point = random.randint(left, right)
         for y in range(height):
             for x in range(left, right):
-                # 15% chance to switch content at copy with content from other
-                if random.randint(1, 100) <= 15:
-                    # Switch unless target is a pipe top or pipe body
-                    if other_genome[y][x] != 'T' and other_genome[y][x] != '|':
-                        new_genome[y][x] = other_genome[y][x]
-
-        # return a one-element tuple
-        return (Individual_Grid(self.mutate(new_genome)))
+                if x < crossover_point:
+                    # gene from self
+                    new_genome[y][x] = self.genome[y][x]
+                else:
+                    # gene from other
+                    new_genome[y][x] = other.genome[y][x]
+        new_genome = self.mutate(new_genome)
+        return (Individual_Grid(new_genome),)
 
     # Turn the genome into a level string (easy for this genome)
     def to_level(self):
@@ -196,21 +168,16 @@ class Individual_DE(object):
             meaningfulJumpVariance=0.5,
             negativeSpace=0.6,
             pathPercentage=2.0,
-            emptyPercentage=0.4,
+            emptyPercentage=0.6,
             linearity=-0.5,
             decorationPercentage = 1.0,
-            leniency = 10.0,
             solvability=2.0
 
         )
         penalties = 0
         # STUDENT For example, too many stairs are unaesthetic.  Let's penalize that
-        if len(list(filter(lambda de: de[1] == "6_stairs", self.genome))) > 7:
+        if len(list(filter(lambda de: de[1] == "6_stairs", self.genome))) > 6:
             penalties -= 2
-
-        # Check if there are more than 5 pipes
-        if len(list(filter(lambda de: de[1] == "7_pipe", self.genome))) > 12:
-            penalties -= 2 
 
         
         # STUDENT If you go for the FI-2POP extra credit, you can put constraint calculation in here too and cache it in a new entry in __slots__.
@@ -381,17 +348,18 @@ class Individual_DE(object):
         elt_count = random.randint(8, 128)
         g = [random.choice([
             (random.randint(1, width - 2), "0_hole", random.randint(1, 2)),
-            (random.randint(1, width - 2), "1_platform", random.randint(1, 8), random.randint(1, 8), random.choice(["?", "X", "B"])),
+            (random.randint(1, width - 2), "1_platform", random.randint(1, height - 8), random.randint(1, height-8), random.choice(["?", "X", "B"])),
             (random.randint(5, width - 3), "2_enemy"),
-            (random.randint(1, width - 2), "3_coin", random.randint(0, 10)),
-            (random.randint(1, width - 2), "4_block", random.randint(0, 8), random.choice([True, False])),
-            (random.randint(1, width - 2), "5_qblock", random.randint(1, 8), random.choice([True, False])),
-            (random.randint(1, width - 2), "6_stairs", random.randint(1, 6), random.choice([-1, 1])),
+            (random.randint(1, width - 2), "3_coin", random.randint(0, height-8)),
+            (random.randint(1, width - 2), "4_block", random.randint(0, height-8), random.choice([True, False])),
+            (random.randint(1, width - 2), "5_qblock", random.randint(1, height-8), random.choice([True, False])),
+            (random.randint(1, width - 2), "6_stairs", random.randint(1, 5), random.choice([-1, 1])),
             (random.randint(1, width - 2), "7_pipe", random.randint(1, 2))
         ]) for i in range(elt_count)]
         return Individual_DE(g)
 
 Individual = Individual_DE
+
 
 def roulette_selection(population, total_fitness):
     # Roulette wheel selection
@@ -416,24 +384,25 @@ def selection(population, total_fitness, selection_method):
         raise ValueError("Invalid selection method")
 
 def generate_successors(population):
-    # STUDENT Design and implement this
-    # Hint: Call generate_children() on some individuals and fill up results.
     results = []
     total_fitness = sum(individual.fitness() for individual in population)
 
     for _ in range(len(population)):
         parent1 = selection(population, total_fitness, "roulette")
         parent2 = selection(population, total_fitness, "tournament")
-        children = parent1.generate_children(parent2)
-        results.extend(children)
+
+        # Check if parents are valid
+        if parent1 is not None and parent2 is not None:
+            children = parent1.generate_children(parent2)
+            if children is not None and len(children) > 0:
+                results.extend(children)
 
     return results
 
 
-
 def ga():
     # STUDENT Feel free to play with this parameter
-    pop_limit = 960
+    pop_limit = 480
     # Code to parallelize some computations
     batches = os.cpu_count()
     if pop_limit % batches != 0:
