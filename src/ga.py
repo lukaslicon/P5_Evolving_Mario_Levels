@@ -234,7 +234,7 @@ class Individual_DE(object):
                 if choice < 0.5:
                     x = offset_by_upto(x, width / 8, min=1, max=width - 2)
                 else:
-                    w = offset_by_upto(w, 4, min=1, max=width - 2)
+                    w = offset_by_upto(w, 4, min=1, max=4)
                 new_de = (x, de_type, w)
             elif de_type == "6_stairs":
                 h = de[2]
@@ -242,7 +242,7 @@ class Individual_DE(object):
                 if choice < 0.33:
                     x = offset_by_upto(x, width / 8, min=1, max=width - 2)
                 elif choice < 0.66:
-                    h = offset_by_upto(h, 8, min=1, max=height - 4)
+                    h = offset_by_upto(h, 8, min=1, max=5)
                 else:
                     dx = -dx
                 new_de = (x, de_type, h, dx)
@@ -266,15 +266,23 @@ class Individual_DE(object):
         return new_genome
 
     def generate_children(self, other):
-        # STUDENT How does this work?  Explain it in your writeup.
+        # Handle the case where either genome is empty
+        if not self.genome or not other.genome:
+            return (copy.deepcopy(self), copy.deepcopy(other))
+
         pa = random.randint(0, len(self.genome) - 1)
         pb = random.randint(0, len(other.genome) - 1)
-        a_part = self.genome[:pa] if len(self.genome) > 0 else []
-        b_part = other.genome[pb:] if len(other.genome) > 0 else []
+
+        a_part = self.genome[:pa]
+        b_part = other.genome[pb:]
+
         ga = a_part + b_part
-        b_part = other.genome[:pb] if len(other.genome) > 0 else []
-        a_part = self.genome[pa:] if len(self.genome) > 0 else []
+
+        b_part = other.genome[:pb]
+        a_part = self.genome[pa:]
+
         gb = b_part + a_part
+
         # do mutation
         return Individual_DE(self.mutate(ga)), Individual_DE(self.mutate(gb))
 
@@ -334,19 +342,19 @@ class Individual_DE(object):
         # STUDENT Maybe enhance this
         elt_count = random.randint(8, 128)
         g = [random.choice([
-            (random.randint(1, width - 2), "0_hole", random.randint(1, 8)),
-            (random.randint(1, width - 2), "1_platform", random.randint(1, 8), random.randint(0, height - 1), random.choice(["?", "X", "B"])),
+            (random.randint(1, width - 2), "0_hole", random.randint(1, 3)),
+            (random.randint(1, width - 2), "1_platform", random.randint(1, 8), random.randint(0, 10), random.choice(["?", "X", "B"])),
             (random.randint(1, width - 2), "2_enemy"),
-            (random.randint(1, width - 2), "3_coin", random.randint(0, height - 1)),
-            (random.randint(1, width - 2), "4_block", random.randint(0, height - 1), random.choice([True, False])),
-            (random.randint(1, width - 2), "5_qblock", random.randint(0, height - 1), random.choice([True, False])),
-            (random.randint(1, width - 2), "6_stairs", random.randint(1, height - 4), random.choice([-1, 1])),
-            (random.randint(1, width - 2), "7_pipe", random.randint(2, height - 4))
+            (random.randint(1, width - 2), "3_coin", random.randint(0, 10)),
+            (random.randint(1, width - 2), "4_block", random.randint(0, 10), random.choice([True, False])),
+            (random.randint(1, width - 2), "5_qblock", random.randint(0, 10), random.choice([True, False])),
+            (random.randint(1, width - 2), "6_stairs", random.randint(1, 6), random.choice([-1, 1])),
+            (random.randint(1, width - 2), "7_pipe", random.randint(2, 6))
         ]) for i in range(elt_count)]
         return Individual_DE(g)
 
 
-Individual = Individual_Grid
+Individual = Individual_DE
 
 
 def generate_successors(population):
@@ -363,7 +371,7 @@ def generate_successors(population):
 
 def ga():
     # STUDENT Feel free to play with this parameter
-    pop_limit = 480
+    pop_limit = 960
     # Code to parallelize some computations
     batches = os.cpu_count()
     if pop_limit % batches != 0:
