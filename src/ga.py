@@ -68,17 +68,17 @@ class Individual_Grid(object):
         # STUDENT also consider weighting the different tile types so it's not uniformly random
         # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
 
-        mutation_rate = 0.1  #determines the probability that a mutation will occur at a specific gene or locus in an individual's genome
+        mutation_rate = 0.3  #determines the probability that a mutation will occur at a specific gene or locus in an individual's genome
         tile_weights = {
-        "-": 0.8,  # Empty space
+        "-": 0.99,  # Empty space
         "X": 0.25,  # Solid wall
         "?": 0.1,  # Question block with coin
-        "M": 0.05, # Question block with mushroom
-        "B": 0.1,  # Breakable block
+        "M": 0.025, # Question block with mushroom
+        "B": 0.05,  # Breakable block
         "o": 0.1,  # Coin
-        "|": 0.05, # Pipe segment
-        "T": 0.05, # Pipe top
-        # "E": 0.05, # Enemy, add if you want enemies in mutation
+        "|": 0.001, # Pipe segment
+        "T": 0.001, # Pipe top
+        # "E": 0.001, # Enemy
         }
         left = 1
         right = width - 1
@@ -92,7 +92,7 @@ class Individual_Grid(object):
                     new_tile = random.choices(tiles, weights=weights, k=1)[0]
                     # Ensure that the mutation does not result in floating pipes
                     if new_tile in ["|", "T"] and (y == height - 1 or genome[y + 1][x] not in ["X", "|", "T"]):
-                        continue  # Skip mutation to prevent unsupported pipe
+                        continue
                     genome[y][x] = new_tile
         return genome
 
@@ -394,8 +394,8 @@ class Individual_DE(object):
         ]) for i in range(elt_count)]
         return Individual_DE(g)
 
-# Individual = Individual_Grid
-Individual = Individual_DE
+Individual = Individual_Grid
+# Individual = Individual_DE
 
 
 def roulette_selection(population, total_fitness):
