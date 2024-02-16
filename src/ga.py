@@ -70,7 +70,7 @@ class Individual_Grid(object):
 
         mutation_rate = 0.3  #determines the probability that a mutation will occur at a specific gene or locus in an individual's genome
         tile_weights = {
-        "-": 0.99,  # Empty space
+        "-": 0.95,  # Empty space
         "X": 0.25,  # Solid wall
         "?": 0.1,  # Question block with coin
         "M": 0.025, # Question block with mushroom
@@ -230,11 +230,14 @@ class Individual_DE(object):
             x = de[0]
             de_type = de[1]
             choice = random.random()
-            if de_type in ["4_block," "5_qblock", "3_coin"]:
-                # adjust y to ensure blocks + coins dont spawn near the top
-                max_height = height - 8
-                y = min(de[2], max_height)
-                new_de = (x, de_type, y) + de[3:]
+
+            min_height = height // 2
+            if de_type in ["4_block", "5_qblock", "3_coin"]:
+                y = de[2]
+                if choice < 0.5:
+                    x = offset_by_upto(x, width / 8, min=1, max=width - 2)
+                else:
+                    y = offset_by_upto(y, height / 2, min=min_height, max=height - 1)
             elif de_type == "4_block":
                 y = de[2]
                 breakable = de[3]
@@ -394,8 +397,8 @@ class Individual_DE(object):
         ]) for i in range(elt_count)]
         return Individual_DE(g)
 
-Individual = Individual_Grid
-# Individual = Individual_DE
+# Individual = Individual_Grid
+Individual = Individual_DE
 
 
 def roulette_selection(population, total_fitness):
