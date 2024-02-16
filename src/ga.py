@@ -69,13 +69,31 @@ class Individual_Grid(object):
         # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
 
         mutation_rate = 0.3  #determines the probability that a mutation will occur at a specific gene or locus in an individual's genome
+        tile_weights = {
+        "-": 0.95,  # Empty space
+        "X": 0.25,  # Solid wall
+        "?": 0.1,  # Question block with coin
+        "M": 0.025, # Question block with mushroom
+        "B": 0.05,  # Breakable block
+        "o": 0.1,  # Coin
+        "|": 0.001, # Pipe segment
+        "T": 0.001, # Pipe top
+        # "E": 0.001, # Enemy
+        }
         left = 1
         right = width - 1
+        tiles = list(tile_weights.keys())
+        weights = [tile_weights[tile] for tile in tiles]
+
         for y in range(height):
             for x in range(left, right):
                 if random.random() < mutation_rate:
-                    # Mutate?
-                    genome[y][x] = random.choice(options)
+                    # Choose a new tile based on weighted probabilities
+                    new_tile = random.choices(tiles, weights=weights, k=1)[0]
+                    # Ensure that the mutation does not result in floating pipes
+                    if new_tile in ["|", "T"] and (y == height - 1 or genome[y + 1][x] not in ["X", "|", "T"]):
+                        continue
+                    genome[y][x] = new_tile
         return genome
 
     # Create zero or more children from self and other
@@ -88,13 +106,25 @@ class Individual_Grid(object):
         crossover_point = random.randint(left, right)
         for y in range(height):
             for x in range(left, right):
-                if x < crossover_point:
-                    # gene from self
-                    new_genome[y][x] = self.genome[y][x]
+                # Implementing and testing uniform crossover
+                if random.random() < 0.5:
+                    selected_gene = self.genome[y][x]
                 else:
-                    # gene from other
-                    new_genome[y][x] = other.genome[y][x]
-        new_genome = self.mutate(new_genome)
+                    selected_gene = other.genome[y][x]
+
+                # Prevent floating pipes
+                if selected_gene in ['|', 'T'] and (y == height - 1 or new_genome[y+1][x] not in ['X', '|', 'T']):
+                    selected_gene = '-' 
+
+                new_genome[y][x] = selected_gene
+        # single point crossover
+        #         if x < crossover_point:
+        #             # gene from self
+        #             new_genome[y][x] = self.genome[y][x]
+        #         else:
+        #             # gene from other
+        #             new_genome[y][x] = other.genome[y][x]
+        # new_genome = self.mutate(new_genome)
         return (Individual_Grid(new_genome),)
 
     # Turn the genome into a level string (easy for this genome)
@@ -200,7 +230,15 @@ class Individual_DE(object):
             x = de[0]
             de_type = de[1]
             choice = random.random()
-            if de_type == "4_block":
+
+            min_height = height // 2
+            if de_type in ["4_block", "5_qblock", "3_coin"]:
+                y = de[2]
+                if choice < 0.5:
+                    x = offset_by_upto(x, width / 8, min=1, max=width - 2)
+                else:
+                    y = offset_by_upto(y, height / 2, min=min_height, max=height - 1)
+            elif de_type == "4_block":
                 y = de[2]
                 breakable = de[3]
                 if choice < 0.33:
@@ -273,6 +311,7 @@ class Individual_DE(object):
                 new_de = (x, de_type)
             new_genome.pop(to_change)
             heapq.heappush(new_genome, new_de)
+            
         return new_genome
 
     def generate_children(self, other):
@@ -358,6 +397,7 @@ class Individual_DE(object):
         ]) for i in range(elt_count)]
         return Individual_DE(g)
 
+# Individual = Individual_Grid
 Individual = Individual_DE
 
 
@@ -424,6 +464,8 @@ def ga():
         start = time.time()
         now = start
         print("Use ctrl-c to terminate this loop manually.")
+
+        # file_path = r'C:\Users\meest\VS Code Projects\P5_Evolving_Mario_Levels\src\levels\last.txt' # had to specify the full path to the file, comment out once done 
         try:
             while True:
                 now = time.time()
@@ -434,7 +476,9 @@ def ga():
                     print("Max fitness:", str(best.fitness()))
                     print("Average generation time:", (now - start) / generation)
                     print("Net time:", now - start)
-                    with open("levels/last.txt", 'w') as f:
+
+                    with open("src/levels/last.txt", 'w') as f:
+                    # with open(file_path, 'w') as f:
                         for row in best.to_level():
                             f.write("".join(row) + "\n")
                 generation += 1
